@@ -6,8 +6,8 @@ from django.http import FileResponse
 from urllib.parse import urlparse
 import instaloader 
 import requests
-from ..twitter_downloader import download_twitter_video
-from ..clear import delete_items_in_folder
+from ..helpers.twitter_downloader import download_twitter_video
+from ..helpers.clear import delete_items_in_folder
 from django.http import HttpResponseBadRequest, FileResponse
 
 
