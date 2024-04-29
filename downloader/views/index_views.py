@@ -1,0 +1,96 @@
+from django.shortcuts import render,redirect
+from django.http import HttpResponse
+from pytube import YouTube
+import os
+from django.http import FileResponse
+from urllib.parse import urlparse
+import instaloader 
+import requests
+from ..twitter_downloader import download_twitter_video
+from django.http import HttpResponseBadRequest, FileResponse
+
+
+def index(request):
+    return render(request, 'index.html')
+def features(request):
+    return render(request, 'features.html')
+def pricing(request):
+    return render(request, 'pricing.html')
+def donate(request):
+    return render(request, 'donate.html')
+
+def download_video(request):
+    if request.method == 'POST':
+        video_link = request.POST.get('video_link')
+        domain_response = get_domain_name(video_link)
+        if domain_response == "youtube.com":
+            if video_link:
+                try:
+                    yt = YouTube(video_link)
+                    stream = yt.streams.get_highest_resolution()
+                    if stream:
+                        save_path = 'Media/Youtube_Media'
+                        video_path = stream.download(output_path=save_path)
+                        filename = os.path.basename(video_path)
+                        response = FileResponse(open(video_path, 'rb'), as_attachment=True)
+                        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                        return response
+                    else:
+                        return HttpResponse("No stream available for this video.")
+                except Exception as e:
+                    return HttpResponse(f"An error occurred: {str(e)}")
+            else:
+                return HttpResponse("No video URL provided.")
+        elif domain_response=="instagram.com":
+            if video_link:
+                shortcode = str(video_link.split('/')[4])
+                try:
+                    # Initialize the Instaloader instance
+                    L = instaloader.Instaloader()
+                    # Set the login credentials
+                    L.login(os.environ.get("INSTA_USERNAME"), os.environ.get("PASSWORD"))
+                    # Get the reel post
+                    try:
+                        post = instaloader.Post.from_shortcode(L.context, shortcode)
+                    except instaloader.exceptions.InstaloaderException as e:
+                        error_message = f"Error occurred: {e}"
+                        return HttpResponse(error_message)
+                    # Get the video URL
+                    video_url = post.video_url
+                    # Download the video using requests
+                    response = requests.get(video_url, stream=True)
+                    # Save the video to a file
+                    file_path = os.path.join('Media', 'Instareel', f'{shortcode}.mp4')
+                    with open(file_path, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    # Return FileResponse to enable the user to download the video
+                    return FileResponse(open(file_path, 'rb'), as_attachment=True)
+                except Exception as e:
+                    error_message = f"Error occurred: {e}"
+                    return HttpResponse(error_message)
+            return HttpResponse("Invalid request method.")
+        elif domain_response == "twitter.com":
+            if video_link:
+                shortcode = str(video_link.split('/')[5])
+                try:
+                    file_path = download_twitter_video(str(video_link), shortcode)
+                    return FileResponse(open(file_path, 'rb'), as_attachment=True)
+                except Exception as e:
+                    return HttpResponseBadRequest(str(e))
+            else:
+                return HttpResponseBadRequest('URL parameter is missing.')  
+        else:
+            return HttpResponse("Unsuppoted domain")
+    else:
+        return redirect('/')
+def get_domain_name(link):
+        try:
+            parsed_link = urlparse(link)
+            domain = parsed_link.netloc
+            if domain.startswith('www.'):
+                domain = domain[4:]  # Remove 'www.' if present
+            return domain
+        except Exception as e:
+            return None
+        
