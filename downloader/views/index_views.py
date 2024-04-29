@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import instaloader 
 import requests
 from ..twitter_downloader import download_twitter_video
+from ..clear import delete_items_in_folder
 from django.http import HttpResponseBadRequest, FileResponse
 
 
@@ -26,6 +27,7 @@ def download_video(request):
         if domain_response == "youtube.com":
             if video_link:
                 try:
+                    delete_items_in_folder('Media/Youtube_Media')
                     yt = YouTube(video_link)
                     stream = yt.streams.get_highest_resolution()
                     if stream:
@@ -45,6 +47,7 @@ def download_video(request):
             if video_link:
                 shortcode = str(video_link.split('/')[4])
                 try:
+                    delete_items_in_folder('Media/Insareel')
                     # Initialize the Instaloader instance
                     L = instaloader.Instaloader()
                     # Set the login credentials
@@ -74,6 +77,7 @@ def download_video(request):
             if video_link:
                 shortcode = str(video_link.split('/')[5])
                 try:
+                    delete_items_in_folder('Media/Twitter')
                     file_path = download_twitter_video(str(video_link), shortcode)
                     return FileResponse(open(file_path, 'rb'), as_attachment=True)
                 except Exception as e:
