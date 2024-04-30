@@ -35,7 +35,6 @@ def download_video(request):
                         video_path = stream.download(output_path=save_path)
                         filename = os.path.basename(video_path)
                         response = FileResponse(open(video_path, 'rb'), as_attachment=True)
-                        # response['Content-Disposition'] = f'attachment; filename="{filename}"'
                         return response
                     else:
                         return HttpResponse("No stream available for this video.")
@@ -49,26 +48,19 @@ def download_video(request):
                 shortcode = str(video_link.split('/')[4])
                 try:
                     delete_items_in_folder('Media/Insareel')
-                    # Initialize the Instaloader instance
                     L = instaloader.Instaloader()
-                    # Set the login credentials
                     L.login(os.environ.get("INSTA_USERNAME"), os.environ.get("PASSWORD"))
-                    # Get the reel post
                     try:
                         post = instaloader.Post.from_shortcode(L.context, shortcode)
                     except instaloader.exceptions.InstaloaderException as e:
                         error_message = f"Error occurred: {e}"
                         return HttpResponse(error_message)
-                    # Get the video URL
                     video_url = post.video_url
-                    # Download the video using requests
                     response = requests.get(video_url, stream=True)
-                    # Save the video to a file
                     file_path = os.path.join('Media', 'Instareel', f'{shortcode}.mp4')
                     with open(file_path, 'wb') as f:
                         for chunk in response.iter_content(chunk_size=8192):
                             f.write(chunk)
-                    # Return FileResponse to enable the user to download the video
                     return FileResponse(open(file_path, 'rb'), as_attachment=True)
                 except Exception as e:
                     error_message = f"Error occurred: {e}"
@@ -94,7 +86,7 @@ def get_domain_name(link):
             parsed_link = urlparse(link)
             domain = parsed_link.netloc
             if domain.startswith('www.'):
-                domain = domain[4:]  # Remove 'www.' if present
+                domain = domain[4:]  
             return domain
         except Exception as e:
             return None
