@@ -35,12 +35,13 @@ def download_video(request):
                         video_path = stream.download(output_path=save_path)
                         filename = os.path.basename(video_path)
                         response = FileResponse(open(video_path, 'rb'), as_attachment=True)
-                        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                        # response['Content-Disposition'] = f'attachment; filename="{filename}"'
                         return response
                     else:
                         return HttpResponse("No stream available for this video.")
                 except Exception as e:
                     return HttpResponse(f"An error occurred: {str(e)}")
+
             else:
                 return HttpResponse("No video URL provided.")
         elif domain_response=="instagram.com":
